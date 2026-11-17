@@ -864,11 +864,8 @@
 
     <!-- No server banner (shown when backend isn't running) -->
     <div class="no-server-banner" id="noBanner" style="display:none">
-      <strong>⚠️ Backend server not detected.</strong> To activate live data, run the server:<br><br>
-      1. Copy <code>tax_roll.csv</code> to the server folder<br>
-      2. Run: <code>npm install && node server.js</code><br>
-      3. Dashboard will auto-connect and begin scanning all 28,594 accounts<br><br>
-      <span style="color:var(--text-muted)">Below is a demo with sample data to preview the interface.</span>
+      <strong>Property records are temporarily unavailable.</strong>
+      Please try again shortly. Your filters will be preserved.
     </div>
 
     <div class="table-toolbar">
@@ -900,7 +897,7 @@
             <td colspan="10">
               <div class="loading-state">
                 <div class="loading-spinner"></div>
-                <span>Connecting to backend...</span>
+                <span>Loading property records...</span>
               </div>
             </td>
           </tr>
@@ -969,7 +966,7 @@ async function fetchStatus() {
     state.serverOnline = false;
     document.getElementById('noBanner').style.display = 'block';
     setStatusOffline();
-    useDemoData();
+    showUnavailableData();
     return null;
   }
 }
@@ -1044,7 +1041,7 @@ function updateStats(s) {
 
 function setStatusOffline() {
   document.getElementById('statusDot').className = 'pulse-dot idle';
-  document.getElementById('statusText').textContent = 'Demo mode — server offline';
+  document.getElementById('statusText').textContent = 'Records unavailable';
 }
 
 // ── TABLE RENDER ──
@@ -1291,7 +1288,7 @@ function closeModal() {
 }
 
 async function rescanAccount(account) {
-  if (!state.serverOnline) return alert('Backend server required for live rescanning.');
+  if (!state.serverOnline) return alert('Property refresh is temporarily unavailable. Please try again shortly.');
   const btn = event.target;
   btn.textContent = 'Scanning...';
   btn.disabled = true;
@@ -1306,7 +1303,7 @@ async function rescanAccount(account) {
 
 // ── SCAN CONTROLS ──
 async function triggerScan() {
-  if (!state.serverOnline) return alert('Backend server is not running. Start it with: node server.js');
+  if (!state.serverOnline) return alert('Property refresh is temporarily unavailable. Please try again shortly.');
   const btn = document.getElementById('scanBtn');
   btn.textContent = 'Starting...';
   btn.disabled = true;
@@ -1315,7 +1312,7 @@ async function triggerScan() {
 }
 
 function exportCSV() {
-  if (!state.serverOnline) return alert('Backend server required for export.');
+  if (!state.serverOnline) return alert('Export is temporarily unavailable. Please try again shortly.');
   window.open(`${API}/export`, '_blank');
 }
 
@@ -1335,32 +1332,24 @@ function startCountdown() {
   }, 1000);
 }
 
-// ── DEMO DATA ──
-function useDemoData() {
-  const demo = [
-    { account:'040540080130', ownerName:'CERISOLA PATRICIA T', propertyAddress:'101 STILLWELL ST', propertyZip:'78209', rollAmountDue:450000, totalAmountDue:567204.02, priorYearsDue:494912.87, amountDue2025:72291.15, lastPaymentDate:null, lastPaymentAmount:null, isDelinquent:true, hasActiveDeferral:true, neverPaid:true, totalMarketValue:4475000, exemptions:'HOMESTEAD, OVER 65', propertyClass:'RESIDENTIAL, SINGLE-FAMILY', scrapedAt:new Date().toISOString() },
-    { account:'210007012X', ownerName:'1ST QUALITY CYLINDERS INC', propertyAddress:'931 W LAUREL', propertyZip:'78201', rollAmountDue:1094108, totalAmountDue:1108234.50, priorYearsDue:880000, amountDue2025:228234, lastPaymentDate:'03/15/2022', lastPaymentAmount:5000, isDelinquent:true, hasActiveDeferral:false, neverPaid:false, totalMarketValue:1200000, exemptions:'None', propertyClass:'COMMERCIAL', scrapedAt:new Date().toISOString() },
-    { account:'886001901X', ownerName:'ARTISAN PARK LLC', propertyAddress:'REFUGIO ST', propertyZip:'78210', rollAmountDue:891241, totalAmountDue:912100, priorYearsDue:780000, amountDue2025:132100, lastPaymentDate:'01/30/2023', lastPaymentAmount:12000, isDelinquent:true, hasActiveDeferral:true, neverPaid:false, totalMarketValue:2000000, exemptions:'None', propertyClass:'COMMERCIAL', scrapedAt:new Date().toISOString() },
-    { account:'404024023X', ownerName:'RODRIGUEZ MARIA E', propertyAddress:'4422 SPRINGFIELD AVE', propertyZip:'78220', rollAmountDue:8400, totalAmountDue:9122.44, priorYearsDue:6200, amountDue2025:2922, lastPaymentDate:'06/12/2021', lastPaymentAmount:800, isDelinquent:true, hasActiveDeferral:false, neverPaid:false, totalMarketValue:89000, exemptions:'HOMESTEAD', propertyClass:'RESIDENTIAL, SINGLE-FAMILY', scrapedAt:new Date().toISOString() },
-    { account:'116000025X', ownerName:'JOHNSON WILLIE L', propertyAddress:'2301 MARTIN LUTHER KING DR', propertyZip:'78203', rollAmountDue:22000, totalAmountDue:24875.33, priorYearsDue:19400, amountDue2025:5475, lastPaymentDate:null, lastPaymentAmount:null, isDelinquent:true, hasActiveDeferral:false, neverPaid:true, totalMarketValue:145000, exemptions:'HOMESTEAD, OVER 65', propertyClass:'RESIDENTIAL, SINGLE-FAMILY', scrapedAt:new Date().toISOString() },
-  ];
-
-  state.data = demo;
-  state.total = demo.length;
+// Clear unavailable records instead of substituting fictional properties.
+function showUnavailableData() {
+  state.data = [];
+  state.total = 0;
   state.pages = 1;
-
-  document.getElementById('statDelinquent').textContent = demo.filter(d=>d.isDelinquent).length;
-  document.getElementById('statTotal').textContent = 'of 28,594 accounts (demo)';
-  document.getElementById('statTotalOwed').textContent = fmtMoney(demo.reduce((s,d)=>s+(d.totalAmountDue||0),0));
-  document.getElementById('statDeferral').textContent = demo.filter(d=>d.hasActiveDeferral).length;
-  document.getElementById('statNeverPaid').textContent = demo.filter(d=>d.neverPaid).length;
-  document.getElementById('statProgress').textContent = '0%';
-  document.getElementById('count-delinquent').textContent = demo.filter(d=>d.isDelinquent).length;
-  document.getElementById('count-deferral').textContent = demo.filter(d=>d.hasActiveDeferral).length;
-  document.getElementById('count-neverPaid').textContent = demo.filter(d=>d.neverPaid).length;
-
-  renderTable();
-  renderPagination();
+  ['statDelinquent', 'statTotalOwed', 'statDeferral', 'statNeverPaid', 'statProgress',
+   'count-delinquent', 'count-deferral', 'count-neverPaid'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('statTotal').textContent = 'Records unavailable';
+  document.getElementById('tableBody').innerHTML = `<tr><td colspan="10"><div class="empty-state">
+    <div class="empty-icon">↻</div>
+    <div class="empty-title">Property records are temporarily unavailable</div>
+    <div class="empty-sub">Please try again shortly.</div>
+  </div></td></tr>`;
+  document.getElementById('resultCount').textContent = '—';
+  document.getElementById('pageInfo').textContent = '—';
+  document.getElementById('pageControls').innerHTML = '';
 }
 
 // ── HELPERS ──
